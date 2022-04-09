@@ -80,7 +80,6 @@ class Piece {
   }
 
   vertexes() {
-    console.log("Piece#vertexes");
     const t = (this.x + this.y) % 2 === 0 ? -1 : 1;
     const center = new Vector(this.x / 2, (this.y / 2) * Math.sqrt(3));
 
@@ -101,10 +100,7 @@ class Piece {
 
   createPathElements() {
     return this.paths().map((path) => {
-      const pathElement = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path"
-      );
+      const element = document.createElementNS("http://www.w3.org/2000/svg", "path");
       let d = "";
       const p0 = path.lines[0];
       const p0_ = p0.plus(this.offset).m(L);
@@ -113,23 +109,72 @@ class Piece {
         const p_ = p.plus(this.offset).m(L);
         d += "L " + p_.x + " " + p_.y;
       });
-      pathElement.setAttribute("d", d);
-      pathElement.setAttribute("stroke", path.stroke);
-      pathElement.setAttribute("fill", path.fill);
+      element.setAttribute("d", d);
+      element.setAttribute("stroke", path.stroke);
+      element.setAttribute("fill", path.fill);
+      if (path.mouseenter) {
+        element.addEventListener("mouseenter", (event) => { path.mouseenter(element, event); });
+      }
+      if (path.mouseleave) {
+        element.addEventListener("mouseleave", (event) => { path.mouseleave(element, event); });
+      }
+      if (path.mouseclick) {
+        element.addEventListener("mouseclick", (event) => { path.mouseclick(element, event); });
+      }
 
-      return pathElement;
+      return element;
     });
   }
 }
 
 class ClickablePiece extends Piece {
+  mouseenter(element, event) {
+    element.classList.add('over');
+  }
+
+  mouseleave(element, event) {
+    element.classList.remove('over');
+  }
+
   paths() {
     const [p0, p1, p2] = this.vertexes();
+    const p01 = p0.ratio(1 / 2, p1);
+    const p12 = p1.ratio(1 / 2, p2);
+    const p20 = p2.ratio(1 / 2, p0);
+
     return [
       {
         lines: [p0, p1, p2, p0],
         stroke: "black",
         fill: "gray"
+      }, {
+        lines: [p0, p01, p20, p0],
+        stroke: 'yellow',
+        fill: "gray",
+        mouseenter: this.mouseenter,
+        mouseleave: this.mouseleave,
+        mouseclick: (element, event) => { }
+      }, {
+        lines: [p1, p12, p01, p1],
+        stroke: 'yellow',
+        fill: "gray",
+        mouseenter: this.mouseenter,
+        mouseleave: this.mouseleave,
+        mouseclick: (element, event) => { }
+      }, {
+        lines: [p2, p20, p12, p2],
+        stroke: 'yellow',
+        fill: "gray",
+        mouseenter: this.mouseenter,
+        mouseleave: this.mouseleave,
+        mouseclick: (element, event) => { }
+      }, {
+        lines: [p01, p12, p20, p01],
+        stroke: 'yellow',
+        fill: "gray",
+        mouseenter: this.mouseenter,
+        mouseleave: this.mouseleave,
+        mouseclick: (element, event) => { }
       }
     ];
   }
@@ -152,11 +197,6 @@ class BorderPiece extends Piece {
 
   paths() {
     const [p0, p1, p2] = this.vertexes();
-    if (this.mark === 0) {
-    }
-
-    //const p1_ = p1.ratio(1 / 4, p0);
-    //const p2_ = p2.ratio(1 / 4, p0);
 
     const m = p1.ratio(1 / 2, p2);
     const h = p0.minus(m);
@@ -180,7 +220,7 @@ class BorderPiece extends Piece {
   }
 }
 
-class NullPiece extends Piece {}
+class NullPiece extends Piece { }
 
 class Stage {
   draw() {
@@ -202,8 +242,8 @@ class Stage {
     }).flat();
 
     pieces.forEach((piece) => {
-      piece.createPathElements().forEach((pathElement) => {
-        SVG.appendChild(pathElement);
+      piece.createPathElements().forEach((element) => {
+        SVG.appendChild(element);
       });
     });
   }
