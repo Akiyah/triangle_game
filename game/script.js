@@ -59,6 +59,50 @@ class Vector {
   }
 }
 
+class Path {
+  constructor(lines, offset, params) {
+    this.lines = lines;
+    this.offset = offset;
+
+    this.element = this.createElement();
+    this.update(params);
+  }
+
+  createElement() {
+    const element = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    let d = "";
+    const p0 = this.lines[0];
+    const p0_ = p0.plus(this.offset).m(L);
+    d += "M " + p0_.x + " " + p0_.y;
+    this.lines.slice(1).forEach((p) => {
+      const p_ = p.plus(this.offset).m(L);
+      d += "L " + p_.x + " " + p_.y;
+    });
+    element.setAttribute("d", d);
+
+    return element;
+  }
+
+  update(params) {
+    if (params.stroke) {
+      this.element.setAttribute("stroke", params.stroke);
+    }
+    if (params.fill) {
+      this.element.setAttribute("fill", params.fill);
+    }
+    if (params.mouseenter) {
+      this.element.addEventListener("mouseenter", (event) => { params.mouseenter(this.element, event); });
+    }
+    if (params.mouseleave) {
+      this.element.addEventListener("mouseleave", (event) => { params.mouseleave(this.element, event); });
+    }
+    if (params.mouseclick) {
+      this.element.addEventListener("mouseclick", (event) => { params.mouseclick(this.element, event); });
+    }
+  }
+}
+
+
 class Piece {
   static create(x, y, offset, mark) {
     if (mark === ".") {
@@ -97,34 +141,6 @@ class Piece {
   paths() {
     return [];
   }
-
-  createPathElements() {
-    return this.paths().map((path) => {
-      const element = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      let d = "";
-      const p0 = path.lines[0];
-      const p0_ = p0.plus(this.offset).m(L);
-      d += "M " + p0_.x + " " + p0_.y;
-      path.lines.slice(1).forEach((p) => {
-        const p_ = p.plus(this.offset).m(L);
-        d += "L " + p_.x + " " + p_.y;
-      });
-      element.setAttribute("d", d);
-      element.setAttribute("stroke", path.stroke);
-      element.setAttribute("fill", path.fill);
-      if (path.mouseenter) {
-        element.addEventListener("mouseenter", (event) => { path.mouseenter(element, event); });
-      }
-      if (path.mouseleave) {
-        element.addEventListener("mouseleave", (event) => { path.mouseleave(element, event); });
-      }
-      if (path.mouseclick) {
-        element.addEventListener("mouseclick", (event) => { path.mouseclick(element, event); });
-      }
-
-      return element;
-    });
-  }
 }
 
 class ClickablePiece extends Piece {
@@ -143,39 +159,54 @@ class ClickablePiece extends Piece {
     const p20 = p2.ratio(1 / 2, p0);
 
     return [
-      {
-        lines: [p0, p1, p2, p0],
-        stroke: "black",
-        fill: "gray"
-      }, {
-        lines: [p0, p01, p20, p0],
-        stroke: 'yellow',
-        fill: "gray",
-        mouseenter: this.mouseenter,
-        mouseleave: this.mouseleave,
-        mouseclick: (element, event) => { }
-      }, {
-        lines: [p1, p12, p01, p1],
-        stroke: 'yellow',
-        fill: "gray",
-        mouseenter: this.mouseenter,
-        mouseleave: this.mouseleave,
-        mouseclick: (element, event) => { }
-      }, {
-        lines: [p2, p20, p12, p2],
-        stroke: 'yellow',
-        fill: "gray",
-        mouseenter: this.mouseenter,
-        mouseleave: this.mouseleave,
-        mouseclick: (element, event) => { }
-      }, {
-        lines: [p01, p12, p20, p01],
-        stroke: 'yellow',
-        fill: "gray",
-        mouseenter: this.mouseenter,
-        mouseleave: this.mouseleave,
-        mouseclick: (element, event) => { }
-      }
+      new Path(
+        [p0, p1, p2, p0],
+        this.offset,
+        {
+          stroke: "black",
+          fill: "gray"
+        }
+      ),
+      new Path(
+        [p0, p01, p20, p0],
+        this.offset,
+        {
+          fill: "gray",
+          mouseenter: this.mouseenter,
+          mouseleave: this.mouseleave,
+          mouseclick: (element, event) => { }
+        }
+      ),
+      new Path(
+        [p1, p12, p01, p1],
+        this.offset,
+        {
+          fill: "gray",
+          mouseenter: this.mouseenter,
+          mouseleave: this.mouseleave,
+          mouseclick: (element, event) => { }
+        }
+      ),
+      new Path(
+        [p2, p20, p12, p2],
+        this.offset,
+        {
+          fill: "gray",
+          mouseenter: this.mouseenter,
+          mouseleave: this.mouseleave,
+          mouseclick: (element, event) => { }
+        }
+      ),
+      new Path(
+        [p01, p12, p20, p01],
+        this.offset,
+        {
+          fill: "gray",
+          mouseenter: this.mouseenter,
+          mouseleave: this.mouseleave,
+          mouseclick: (element, event) => { }
+        }
+      )
     ];
   }
 }
@@ -206,16 +237,22 @@ class BorderPiece extends Piece {
     const m_ = m.plus(h.m(1 / 4));
 
     return [
-      {
-        lines: [m, p1, p1_, m_, m],
-        stroke: "black",
-        fill: "aqua"
-      },
-      {
-        lines: [m, p2, p2_, m_, m],
-        stroke: "black",
-        fill: "white"
-      }
+      new Path(
+        [m, p1, p1_, m_, m],
+        this.offset,
+        {
+          stroke: "black",
+          fill: "aqua"
+        }
+      ),
+      new Path(
+        [m, p2, p2_, m_, m],
+        this.offset,
+        {
+          stroke: "black",
+          fill: "white"
+        }
+      )
     ];
   }
 }
@@ -242,8 +279,8 @@ class Stage {
     }).flat();
 
     pieces.forEach((piece) => {
-      piece.createPathElements().forEach((element) => {
-        SVG.appendChild(element);
+      piece.paths().forEach((path) => {
+        SVG.appendChild(path.element);
       });
     });
   }
