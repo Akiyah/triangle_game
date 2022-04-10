@@ -4,5 +4,11 @@ svg {
 }
 
 .over {
-  fill: yellow;
+  fill: aqua;
+  fill-opacity: 0.8;
+}
+
+.over_w {
+  fill: white;
+  fill-opacity: 0.8;
 }
